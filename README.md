@@ -1,1 +1,3 @@
-# otus-gitlab-2026
+# OTUS GitLab learning lab
+
+<Добавить потом описание>

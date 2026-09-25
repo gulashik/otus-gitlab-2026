@@ -1,0 +1,24 @@
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:18.4.2-ce.0
+    hostname: localhost
+    restart: unless-stopped
+    shm_size: "256m"
+    env_file:
+      # Created locally by scripts/initialize-gitlab.sh; never commit this file.
+      - ./local/gitlab-root-password.env
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Keep these values synchronized with the host port mappings below.
+        external_url 'http://localhost:8929'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        # This setting is used only when GitLab creates its first database.
+        gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
+    ports:
+      - "8929:8929"   # Matches external_url: http://localhost:8929
+      - "2222:22"     # Git-over-SSH endpoint: ssh://git@localhost:2222/<group>/<project>.git
+    volumes:
+      - ./local/gitlab/config:/etc/gitlab
+      - ./local/gitlab/logs:/var/log/gitlab
+      - ./local/gitlab/data:/var/opt/gitlab
