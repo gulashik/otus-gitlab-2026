@@ -1,5 +1,5 @@
 # Generated GitLab configuration, logs, database, repositories, artifacts, and secrets.
-local/gitlab/
+local/*
 steps
 
 ### Coding ###
@@ -19,6 +19,7 @@ build/
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
+!.gitkeep
 
 ### IntelliJ IDEA ###
 .idea
