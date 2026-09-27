@@ -11,8 +11,8 @@
     * [runner app check](#runner-app-check)
   * [Register the gitlab runner for the group `gulash-prj`](#register-the-gitlab-runner-for-the-group-gulash-prj)
 * [Restart gitlab in the background.](#restart-gitlab-in-the-background)
-  * [All down](#all-down-)
-  * [All up](#all-up)
+  * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
+  * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
   * [Wait for](#wait-for-)
 * [Not yet needed](#not-yet-needed)
 <!-- TOC -->
@@ -90,11 +90,11 @@ podman compose exec runner gitlab-runner verify
 ```
 
 # Restart gitlab in the background.
-## All down 
+## Suspend the training stand, keeping all container states intact. 
 ```bash
 podman stop -a && podman ps -a
 ```
-## All up
+## Resume the training stand, restoring all container states.
 ```bash
 podman compose up -d  && podman ps -a
 ```
