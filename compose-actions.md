@@ -1,24 +1,29 @@
 <!-- TOC -->
-* [Run/Rerun Gitlab instance](#runrerun-gitlab-instance)
-  * [Clear the current gitlab instance](#clear-the-current-gitlab-instance)
+* [Recreate Gitlab instance](#recreate-gitlab-instance)
+  * [Clear the current Gitlab instance](#clear-the-current-gitlab-instance)
   * [Show and generate a Gitlab root password.](#show-and-generate-a-gitlab-root-password)
-  * [Start gitLab in the background.](#start-gitlab-in-the-background)
+  * [Start Gitlab in the background.](#start-gitlab-in-the-background)
   * [Verify readiness and sign in](#verify-readiness-and-sign-in)
-* [Add and Registration a gitlab runner](#add-and-registration-a-gitlab-runner)
-  * [Build image: ubuntu + runner app + docker app](#build-image-ubuntu--runner-app--docker-app)
-  * [Launch the gitLab runner container to validate the docker image build process.](#launch-the-gitlab-runner-container-to-validate-the-docker-image-build-process)
+* [Add and Register a Gitlab runner](#add-and-register-a-gitlab-runner)
+  * [Build image: Ubuntu + Gitlab runner app + Docker app](#build-image-ubuntu--gitlab-runner-app--docker-app)
+  * [Launch the Gitlab runner container and validate the docker image build process.](#launch-the-gitlab-runner-container-and-validate-the-docker-image-build-process)
     * [docker app check](#docker-app-check)
     * [runner app check](#runner-app-check)
-  * [Register the gitlab runner for the group `gulash-prj`](#register-the-gitlab-runner-for-the-group-gulash-prj)
-* [Restart gitlab in the background.](#restart-gitlab-in-the-background)
+  * [Register the Gitlab runner for the group `gulash-prj`](#register-the-gitlab-runner-for-the-group-gulash-prj)
+* [Configure the GitLab ssh key](#configure-the-gitlab-ssh-key)
+  * [Verify and trust the SSH host key of the local GitLab learning instance](#verify-and-trust-the-ssh-host-key-of-the-local-gitlab-learning-instance)
+  * [Register the public SSH key for a local GitLab root through the GitLab API](#register-the-public-ssh-key-for-a-local-gitlab-root-through-the-gitlab-api)
+  * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
+* [Add the SpringBoot app](#add-the-springboot-app)
+  * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
+* [Restart Gitlab in the background.](#restart-gitlab-in-the-background)
   * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
   * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
   * [Wait for](#wait-for-)
-* [Not yet needed](#not-yet-needed)
 <!-- TOC -->
 
-# Run/Rerun Gitlab instance
-## Clear the current gitlab instance
+# Recreate Gitlab instance
+## Clear the current Gitlab instance
 ```bash
 podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
@@ -37,7 +42,7 @@ echo 'login: root' && \
 grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env
 ```
 
-## Start gitLab in the background.
+## Start Gitlab in the background.
 Up
 ```bash
 podman compose up -d gitlab
@@ -60,12 +65,12 @@ curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
     echo "not yet"
 ```
 
-# Add and Registration a gitlab runner
-## Build image: ubuntu + runner app + docker app
+# Add and Register a Gitlab runner
+## Build image: Ubuntu + Gitlab runner app + Docker app
 ```bash
 podman compose build runner
 ```
-## Launch the gitLab runner container to validate the docker image build process.
+## Launch the Gitlab runner container and validate the docker image build process.
 ```bash
 podman compose up -d runner
 ```
@@ -79,7 +84,7 @@ podman compose exec runner docker info
 ```bash
 podman compose exec runner gitlab-runner --version
 ```
-## Register the gitlab runner for the group `gulash-prj`
+## Register the Gitlab runner for the group `gulash-prj`
 The command `podman compose exec -T runner gitlab-runner register ...` from the `register-group-runner.sh` adds a Docker-executor block to `local/runner/config/config.toml`
 ```bash
 ./scripts/register-group-runner.sh 
@@ -89,7 +94,44 @@ Verify that the runner is registered by running the command podman or by checkin
 podman compose exec runner gitlab-runner verify
 ```
 
-# Restart gitlab in the background.
+# Configure the GitLab ssh key
+List an existing public key
+```bash
+ls ~/.ssh/id_ed25519.pub
+```
+If you do not have a suitable key, create a passphrase-protected Ed25519 key
+```bash
+# ssh-keygen -t ed25519 -C 'your@example.com'
+```
+## Verify and trust the SSH host key of the local GitLab learning instance
+Careful, scripts affect file ~/.ssh/known_hosts
+```bash 
+./scripts/trust-local-gitlab-host-key.sh
+```
+
+## Register the public SSH key for a local GitLab root through the GitLab API
+Register the public key in GitLab using either the UI or the included API script.
+
+**UI**: In GitLab, select your avatar, then **Edit profile → Access → SSH keys**. Paste the contents of the chosen `.pub` file, give it a descriptive title, and add it.
+
+**Script**:
+```bash
+./scripts/add-user-ssh-key.sh
+```
+## Test SSH without interactive host-key acceptance
+This command makes both checks at once: GitLab must recognize your key, and your computer must recognize GitLab’s recorded host key.
+GitLab responds with a greeting such as `Welcome to GitLab, @root!` if everything is good.
+```bash 
+ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
+```
+
+# Add the SpringBoot app
+## Register project `gulash-prj/cocktail-search`
+```bash
+./scripts/create-cocktail-search-project.sh
+```
+
+# Restart Gitlab in the background.
 ## Suspend the training stand, keeping all container states intact. 
 ```bash
 podman stop -a && podman ps -a
@@ -105,6 +147,3 @@ curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
     echo "not yet"
 ```
 
-// ------------------------ //
-# Not yet needed
-Git-over-SSH endpoint is `ssh://git@localhost:2222/<group>/<project>.git`.

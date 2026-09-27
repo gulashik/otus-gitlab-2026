@@ -4,6 +4,7 @@ steps
 
 ### Coding ###
 HELP.md
+DEV_MVP_BLUEPRINT.md
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
