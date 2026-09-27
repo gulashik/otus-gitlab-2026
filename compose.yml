@@ -22,3 +22,19 @@ services:
       - ./local/gitlab/config:/etc/gitlab
       - ./local/gitlab/logs:/var/log/gitlab
       - ./local/gitlab/data:/var/opt/gitlab
+
+  runner:
+    build:
+      context: ./images/runner-image
+    image: otus-gitlab-runner:local
+    restart: unless-stopped
+    privileged: true # Required only for the Docker daemon inside this trusted local lab.
+    depends_on:
+      - gitlab
+    extra_hosts:
+      # The Runner itself reaches its local proxy at 127.0.0.1.
+      # Docker jobs use the host-gateway mapping supplied by config.toml.
+      - "gitlab.local:127.0.0.1"
+    volumes:
+      - ./local/runner/config:/etc/gitlab-runner
+      - ./local/runner/docker:/var/lib/docker

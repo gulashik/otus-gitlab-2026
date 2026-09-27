@@ -1,0 +1,13 @@
+stages:
+  - verify
+
+verify-runner-default-image:
+  stage: verify
+  tags:
+    - docker
+  # No image: declaration: the Docker executor's alpine:3 default is exercised.
+  script:
+    - test -f /etc/alpine-release
+    - cat /etc/alpine-release
+    - wget -qO- http://gitlab.local:8929/users/sign_in >/dev/null
+    - echo "Alpine and nested GitLab route verified"

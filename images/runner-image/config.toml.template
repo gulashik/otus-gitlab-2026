@@ -1,0 +1,19 @@
+# This is a teaching template merged into a [[runners]] block by
+# `gitlab-runner register --template-config`. URL, authentication token, name,
+# tags, and untagged-job policy are supplied by GitLab and must not be stored
+# in this version-controlled file.
+concurrent = 2
+check_interval = 0
+
+[[runners]]
+  executor = "docker"
+  clone_url = "http://gitlab.local:8929"
+  [runners.cache]
+    Type = ""
+  [runners.docker]
+    host = "unix:///var/run/docker.sock"
+    image = "alpine:3"
+    privileged = false
+    disable_cache = true
+    volumes = ["/cache"]
+    extra_hosts = ["gitlab.local:host-gateway"]
