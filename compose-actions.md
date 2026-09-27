@@ -16,6 +16,7 @@
   * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
 * [Add the SpringBoot app](#add-the-springboot-app)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
+  * [Push the existing local application repository](#push-the-existing-local-application-repository)
 * [Restart Gitlab in the background.](#restart-gitlab-in-the-background)
   * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
   * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
@@ -131,6 +132,16 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ./scripts/create-cocktail-search-project.sh
 ```
 
+## Push the existing local application repository
+After recreating the GitLab lab, the remote project is empty even though the existing local `projects/cocktail-search` repository still has its commit.
+
+`-C projects/cocktail-search` tells Git to run in the nested application repository. 
+
+`-u` option restores the `main` → `origin/main` tracking relationship
+```bash
+git -C projects/cocktail-search push -u origin main
+```
+
 # Restart Gitlab in the background.
 ## Suspend the training stand, keeping all container states intact. 
 ```bash
@@ -146,4 +157,3 @@ curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
     echo "not yet"
 ```
-
