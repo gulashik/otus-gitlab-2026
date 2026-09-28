@@ -133,7 +133,8 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ```
 
 ## Push the existing local application repository
-After recreating the GitLab lab, the remote project is empty even though the existing local `projects/cocktail-search` repository still has its commit.
+After recreating the GitLab lab, the remote project is empty even though the existing local `projects/cocktail-search` repository still has its commits.
+After pushing the commit, a pipeline is triggered in the GitLab instance.
 
 `-C projects/cocktail-search` tells Git to run in the nested application repository. 
 
