@@ -1,0 +1,6 @@
+test:
+  image: eclipse-temurin:21-jdk
+  tags:
+    - docker
+  script:
+    - ./gradlew test
