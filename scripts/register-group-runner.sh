@@ -118,6 +118,7 @@ revoke_temporary_tokens
 # another distinct runner; delete the old one in GitLab first, or set a new
 # RUNNER_NAME and RUNNER_TAG.
 podman compose exec -T runner gitlab-runner register --non-interactive \
+  --template-config /usr/local/share/gitlab-runner/config.toml.template \
   --url "$runner_gitlab_url" \
   --token "$runner_token" \
   --executor docker \

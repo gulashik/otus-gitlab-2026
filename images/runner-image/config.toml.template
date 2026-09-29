@@ -15,5 +15,5 @@ check_interval = 0
     image = "alpine:3"
     privileged = false
     disable_cache = true
-    volumes = ["/cache"]
+    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
     extra_hosts = ["gitlab.local:host-gateway"]
