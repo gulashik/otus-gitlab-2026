@@ -17,7 +17,8 @@
 * [Add the SpringBoot app](#add-the-springboot-app)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
   * [Push the existing local application repository](#push-the-existing-local-application-repository)
-* [Restart Gitlab in the background.](#restart-gitlab-in-the-background)
+  * [Wait for the GitLab pipeline will be completed](#wait-for-the-gitlab-pipeline-will-be-completed)
+* [Restart the Gitlab in the background.](#restart-the-gitlab-in-the-background)
   * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
   * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
   * [Wait for](#wait-for-)
@@ -55,15 +56,23 @@ podman ps -a
 ```
 
 ## Verify readiness and sign in
-Logs
+Check that the sign-in page responds – wait loop
 ```bash
-podman compose logs -f gitlab
+until curl --fail --silent --show-error http://localhost:8929/users/sign_in >/dev/null; do
+  echo "not yet"
+  sleep 30
+done
+{ echo "GitLab is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env }
 ```
-Check that the sign-in page responds
+Check that the sign-in page responds - manually
 ```bash
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
     echo "not yet"
+```
+Logs
+```bash
+podman compose logs -f gitlab
 ```
 
 # Add and Register a Gitlab runner
@@ -143,7 +152,18 @@ After pushing the commit, a pipeline is triggered in the GitLab instance.
 git -C projects/cocktail-search push -u origin main
 ```
 
-# Restart Gitlab in the background.
+## Wait for the GitLab pipeline will be completed
+Confirm the pipeline can be assigned to the newly registered `docker` Runner in the GitLab UI.
+A successful test pipeline proves checkout and the Runner's internal Docker test environment both work again.
+See UI get pass from the script output:
+```bash
+curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
+  { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
+    echo "not yet started"
+```
+
+///====///
+# Restart the Gitlab in the background.
 ## Suspend the training stand, keeping all container states intact. 
 ```bash
 podman stop -a && podman ps -a
