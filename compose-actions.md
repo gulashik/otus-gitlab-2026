@@ -16,6 +16,7 @@
   * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
 * [Add the SpringBoot app](#add-the-springboot-app)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
+  * [Prepare the application for GitHub and local GitLab](#prepare-the-application-for-github-and-local-gitlab)
   * [Push the existing local application repository](#push-the-existing-local-application-repository)
   * [Wait for the GitLab pipeline will be completed](#wait-for-the-gitlab-pipeline-will-be-completed)
 * [Restart the Gitlab in the background.](#restart-the-gitlab-in-the-background)
@@ -64,7 +65,7 @@ until curl --fail --silent --show-error http://localhost:8929/users/sign_in >/de
 done
 { echo "GitLab is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env }
 ```
-Check that the sign-in page responds - manually
+Check that the sign-in page responds – manually
 ```bash
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
@@ -141,15 +142,16 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ./scripts/create-cocktail-search-project.sh
 ```
 
-## Push the existing local application repository
-After recreating the GitLab lab, the remote project is empty even though the existing local `projects/cocktail-search` repository still has its commits.
-After pushing the commit, a pipeline is triggered in the GitLab instance.
-
-`-C projects/cocktail-search` tells Git to run in the nested application repository. 
-
-`-u` option restores the `main` → `origin/main` tracking relationship
+## Link the subproject to the local GitLab repository
 ```bash
-git -C projects/cocktail-search push -u origin main
+cd ./projects/cocktail-search
+git init --initial-branch=main
+git add .
+git commit -m "inner project pushing"
+git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
+git -C projects/cocktail-search remote -v
+git branch -M main
+git push -u origin main
 ```
 
 ## Wait for the GitLab pipeline will be completed
@@ -160,6 +162,14 @@ See UI get pass from the script output:
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
     echo "not yet started"
+```
+
+///====Before commit====///
+## Prepare the subproject for GitHub commit clears its git folder 
+
+```bash
+rm -rf ./projects/cocktail-search/.git
+#git rm --cached projects/cocktail-search
 ```
 
 ///====///
