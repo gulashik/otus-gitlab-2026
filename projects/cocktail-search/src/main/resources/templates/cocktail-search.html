@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cocktail ingredient search</title>
+    <link rel="stylesheet" th:href="@{/css/cocktail-search.css}">
+</head>
+<body>
+<main>
+    <h1>Cocktail ingredient search</h1>
+    <p>Enter ingredients separated by commas. For example: <code>dry gin, lemon juice</code>.</p>
+
+    <form method="get" action="/">
+        <label for="ingredients">Ingredients</label>
+        <input id="ingredients" name="ingredients" type="text" required
+               th:value="${submittedIngredients}"
+               aria-describedby="ingredient-help">
+        <p id="ingredient-help">Use a comma between each ingredient.</p>
+        <button type="submit">Search cocktails</button>
+    </form>
+
+    <section th:if="${invalidInput}" class="feedback feedback--error" aria-live="polite">
+        <h2>Enter at least one ingredient</h2>
+        <p>Use a non-blank ingredient name, such as <code>gin</code>.</p>
+    </section>
+
+    <section th:if="${noResults}" class="feedback" aria-live="polite">
+        <h2>No matching cocktails</h2>
+        <p>No catalogue ingredients were recognized for:
+            <span th:text="${#strings.listJoin(searchResponse.unrecognizedIngredients, ', ')}">moon dust</span>.</p>
+    </section>
+
+    <section th:if="${searchResponse != null and !noResults}" aria-live="polite">
+        <h2>Search results</h2>
+        <p>Recognized ingredients: <span th:text="${#strings.listJoin(searchResponse.recognizedIngredients, ', ')}">gin, lemon juice</span></p>
+        <p th:if="${!searchResponse.unrecognizedIngredients.isEmpty()}">
+            Unrecognized ingredients: <span th:text="${#strings.listJoin(searchResponse.unrecognizedIngredients, ', ')}">unknown</span>
+        </p>
+        <article th:each="cocktail : ${searchResponse.cocktails}" class="cocktail-card">
+            <h3 th:text="${cocktail.name}">Cocktail name</h3>
+            <p><strong>Recipe:</strong> <span th:text="${cocktail.recipe}">Recipe</span></p>
+            <p><strong>Matched ingredients:</strong> <span th:text="${#strings.listJoin(cocktail.matchedIngredients, ', ')}">gin</span></p>
+            <p><strong>Match:</strong> <span th:text="${cocktail.matchCount}">1</span> of <span th:text="${cocktail.totalIngredientCount}">3</span> ingredients</p>
+        </article>
+    </section>
+</main>
+</body>
+</html>

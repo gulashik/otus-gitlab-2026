@@ -1,0 +1,8 @@
+test:
+  image: eclipse-temurin:21-jdk
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: unix:///var/run/docker.sock
+  script:
+    - ./gradlew test

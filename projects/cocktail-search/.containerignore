@@ -1,0 +1,18 @@
+# Files excluded from the Podman build context.
+# This is deliberately separate from .gitignore: it controls image inputs, not Git tracking.
+.git
+.gradle
+.kotlin
+.idea
+.vscode
+build
+out
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Local configuration can contain credentials and must never become an image
+# build input.
+.env
+.env.*

@@ -1,0 +1,24 @@
+# build layer - build a .jar within JDK-image that contains javac
+FROM docker.io/library/eclipse-temurin@sha256:1afee26c547e1aa89f47404854dd09203b8bd35a2be269e16bdfd69c4a2c2b50 AS build
+
+WORKDIR /workspace
+
+COPY gradlew build.gradle.kts settings.gradle.kts ./
+COPY gradle ./gradle
+RUN chmod +x gradlew && ./gradlew --no-daemon dependencies
+
+COPY src ./src
+RUN ./gradlew --no-daemon bootJar \
+    && cp "$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)" /tmp/app.jar
+
+# runtime layer - only .jar copy within JRE-image that contains Java Runtime suffciient for java -jar
+FROM docker.io/library/eclipse-temurin@sha256:0c324fbe2e1455c3159184717440f3b52906ef82a39c4a6efc9edb401d31971a
+
+RUN useradd --system --uid 10001 --create-home spring
+WORKDIR /app
+COPY --from=build /tmp/app.jar /app/app.jar
+
+USER 10001
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
