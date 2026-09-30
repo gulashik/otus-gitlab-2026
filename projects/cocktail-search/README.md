@@ -5,6 +5,7 @@ A Kotlin and Spring Boot application that will search cocktail recipes by ingred
 ## Run test
 
 ```bash
+cd projects/cocktail-search
 ./gradlew test
 ```
 
