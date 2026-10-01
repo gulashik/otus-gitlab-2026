@@ -31,7 +31,7 @@
 podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/gitlab-root-password.env
+rm -rf ./local/gitlab ./local/runner ./local/gitlab-root-password.env ./projects/cocktail-search/.git
 ```
 
 ## Show and generate a Gitlab root password.

@@ -10,6 +10,10 @@ This repository is a hands-on, local GitLab CE learning lab for  [OTUS course](h
 
 The lab stores its GitLab data and local credentials under `local/`. Those files are intentionally ignored and must never be committed or shared.
 
-## See
+## Ineractive GitLab lab start
 
+```bash
+./scripts/start-lab-dashboard.sh
+```
+## See also
 - [compose-actions.md](compose-actions.md) — the existing command-by-command guide for starting, restarting, and configuring the local GitLab lab.
