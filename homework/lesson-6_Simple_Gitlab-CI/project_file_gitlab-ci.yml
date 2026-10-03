@@ -1,0 +1,93 @@
+stages:
+  - test
+  - build
+  - deploy-non-prod
+  - deploy-prod
+
+# ---------- Pipeline-level options ----------
+variables:
+  APP_NAME: "homework-app"
+  TEST_DIR: "test-data"
+
+default:
+  tags:
+    - docker
+# ---------- TEST ----------
+unit-tests:
+  stage: test
+  before_script:
+    - echo "Создаём тестовые данные"
+    - mkdir -p $TEST_DIR
+    - echo "test input" > $TEST_DIR/input.txt
+  script:
+    - echo "Запускаем тесты для $APP_NAME"
+    - test -f $TEST_DIR/input.txt && echo "Тесты прошли"
+  after_script:
+    - echo "Удаляем тестовые данные"
+    - rm -rf $TEST_DIR
+
+repo-script:
+  stage: test
+  needs: [unit-tests]
+  before_script:
+    - echo "Генерируем scripts/check.sh"
+    - mkdir -p scripts
+    - |
+      cat > scripts/check.sh << 'EOF'
+      #!/bin/sh
+      echo "Скрипт из репозитория запущен"
+      echo "Проект: $CI_PROJECT_NAME, ветка: $CI_COMMIT_REF_NAME"
+      EOF
+    - chmod +x scripts/check.sh
+  script:
+    - ./scripts/check.sh
+
+# ---------- BUILD ----------
+build-app:
+  stage: build
+  script:
+    - echo "Собираем $APP_NAME, коммит $CI_COMMIT_SHORT_SHA"
+    - mkdir -p dist
+    - echo "artifact of $APP_NAME" > dist/app.txt
+  artifacts:
+    paths:
+      - dist/
+
+# ---------- DEPLOY ----------
+.deploy-template:
+  stage: deploy-non-prod
+  script:
+    - echo "Деплой $APP_NAME в окружение $DEPLOY_ENV"
+    - cat dist/app.txt
+
+deploy-dev:
+  extends: .deploy-template
+  variables:
+    DEPLOY_ENV: "dev"
+  environment:
+    name: dev
+
+deploy-stage:
+  extends: .deploy-template
+  needs:
+    - job: build-app
+    - job: deploy-dev
+      artifacts: false
+  variables:
+    DEPLOY_ENV: "stage"
+  environment:
+    name: stage
+  when: manual # stage env preferably manual trigger
+
+deploy-prod:
+  stage: deploy-prod
+  extends: .deploy-template
+  needs:
+    - job: build-app
+    - job: deploy-stage
+      artifacts: false
+  variables:
+    DEPLOY_ENV: "prod"
+  environment:
+    name: prod
+  when: manual # prod env only manual trigger
