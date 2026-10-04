@@ -1,12 +1,15 @@
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - when: never
 
 stages:
   - test
   - build
-  - deploy
+  - deploy_nonprod
+  - deploy_prod
 
 test:
   stage: test
@@ -14,7 +17,7 @@ test:
   tags:
     - docker
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
     - ./gradlew test --no-daemon
 
@@ -27,31 +30,55 @@ build_check:
     DOCKER_HOST: unix:///var/run/docker.sock
     DOCKER_BUILDKIT: "0"
   rules:
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - docker build --pull --file Containerfile --tag "cocktail-search-build-check:${CI_COMMIT_SHA}" .
 
-deploy_stage:
-  stage: deploy
+validate_branch_name:
+  stage: test
   image: alpine:3.21
   tags:
     - docker
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - |
+      case "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" in
+        feature/*|bugfix/*|hotfix/*)
+          echo "Accepted merge-request source branch: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+          ;;
+        *)
+          echo "Invalid merge-request source branch: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+          echo "Use a branch beginning with feature/, bugfix/, or hotfix/."
+          exit 1
+          ;;
+      esac
+
+deploy_stage:
+  stage: deploy_nonprod
+  image: alpine:3.21
+  tags:
+    - docker
+  rules:
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   environment:
     name: stage
   script:
     - echo 'Stage environment recorded. Real Podman deployment is deferred.'
 
 deploy_prod:
-  stage: deploy
+  stage: deploy_prod
   image: alpine:3.21
   tags:
     - docker
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   when: manual
   allow_failure: false
+  needs:
+    - job: deploy_stage
+      artifacts: false
   environment:
     name: prod
   script:
