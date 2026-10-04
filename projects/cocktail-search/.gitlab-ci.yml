@@ -1,3 +1,13 @@
+# Pipeline map:
+# - feature branch push: build_check
+# - MR pipeline: test + validate_branch_name -> build_check
+# - main push or run pipeline for main: test -> build_check -> stage -> manual prod
+# - run pipeline for a non-default branch: build_check
+
+default:
+  tags:
+    - docker
+
 workflow:
   rules:
     # After an MR is opened, use its MR pipeline instead of a duplicate push pipeline.
@@ -14,35 +24,10 @@ stages:
   - deploy_nonprod
   - deploy_prod
 
-test:
-  stage: test
-  image: eclipse-temurin:21-jdk
-  tags:
-    - docker
-  rules:
-    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-  script:
-    - ./gradlew test --no-daemon
-
-build_check:
-  stage: build
-  image: docker:29-cli
-  tags:
-    - docker
-  variables:
-    DOCKER_HOST: unix:///var/run/docker.sock
-    DOCKER_BUILDKIT: "0"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  script:
-    - docker build --pull --file Containerfile --tag "cocktail-search-build-check:${CI_COMMIT_SHA}" .
-
+#====== TEST ======
 validate_branch_name:
   stage: test
   image: alpine:3.21
-  tags:
-    - docker
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
@@ -58,11 +43,33 @@ validate_branch_name:
           ;;
       esac
 
+test:
+  stage: test
+  image: eclipse-temurin:21-jdk
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  script:
+    - ./gradlew test --no-daemon
+
+
+#====== BUILD ======
+build_check:
+  stage: build
+  image: docker:29-cli
+  variables:
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_BUILDKIT: "0"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - docker build --pull --file Containerfile --tag "cocktail-search-build-check:${CI_COMMIT_SHA}" .
+
+#====== DEPLOY ======
 deploy_stage:
   stage: deploy_nonprod
   image: alpine:3.21
-  tags:
-    - docker
   rules:
     - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   environment:
@@ -73,8 +80,6 @@ deploy_stage:
 deploy_prod:
   stage: deploy_prod
   image: alpine:3.21
-  tags:
-    - docker
   rules:
     - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   when: manual

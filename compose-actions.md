@@ -150,14 +150,8 @@ git -C projects/cocktail-search remote add origin ssh://git@localhost:2222/gulas
 git -C projects/cocktail-search push -u origin main
 ```
 
-## Verify feature and default-branch pipelines
-The initial push to `main` runs `test`, non-publishing `build_check`, and the
-automatic `stage` placeholder, then waits at the blocking manual `prod` job.
-Use **Play** for `prod` to complete its placeholder; neither deployment job
-operates Podman. A feature-branch push runs only `build_check`.
-
-Open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines` and confirm
-the jobs match the branch you pushed. Check GitLab readiness separately with:
+Open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines`
+See GitLab readiness and pass separately with:
 ```bash
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
