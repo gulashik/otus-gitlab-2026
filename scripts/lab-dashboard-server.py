@@ -30,12 +30,12 @@ sys.exit("GitLab did not become ready within 10 minutes.")''']]),
  "start-runner": ("Build and start Runner", [["podman","compose","build","runner"],["podman","compose","up","-d","runner"],["podman","compose","exec","runner","docker","info"],["podman","compose","exec","runner","gitlab-runner","--version"]]),
  "register-runner": ("Register group Runner", [["./scripts/register-group-runner.sh"],["podman","compose","exec","runner","gitlab-runner","verify"]]),
  "configure-ssh": ("Configure SSH trust and identity", [["./scripts/trust-local-gitlab-host-key.sh"],["./scripts/add-user-ssh-key.sh"],["bash","-lc",'ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost; status=$?; test "$status" -eq 1 -o "$status" -eq 0']]),
- "create-project": ("Create and push sample project", [["bash","-lc",'''set -e
+ "create-project": ("Publish tracked application source", [["bash","-lc",'''set -e
 ./scripts/create-cocktail-search-project.sh
 cd projects/cocktail-search
 git init --initial-branch=main
 git add .
-git commit -m "Initial project push"
+git commit -m "Publish application to local GitLab"
 git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
 git push -u origin main''']]),
  "show-login-password": ("Show GitLab sign-in password", [["bash","-lc",'''curl -fsS http://localhost:8929/users/sign_in >/dev/null && \

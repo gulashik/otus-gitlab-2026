@@ -31,13 +31,13 @@ podman run --rm --name cocktail-search-container \
 In another terminal, verify that it is ready:
 
 ```bash
-curl --fail --silent --show-error http://localhost:8081/actuator/health
+curl --fail --silent --show-error http://localhost:8082/actuator/health
 ```
 The response contains `{"status":"UP"}` and has HTTP status 200 when the  service is ready.
 
 ## Browser search UI
 
-Open [http://localhost:8081/](http://localhost:8081/) after the service is ready. 
+Open [http://localhost:8082/](http://localhost:8082/) after the service is ready. 
 Enter a comma-separated ingredient list, for example `dry gin, lemon juice`. 
 The page resolves `dry gin` to `gin` and displays ranked recipe cards.
 Try `xxx` to see the no-results state, or submit only commas to see the HTML input correction message. 
@@ -48,7 +48,7 @@ Try `xxx` to see the no-results state, or submit only commas to see the HTML inp
 Results are ordered by the number of distinct matched ingredients (descending), then cocktail name (ascending).
 
 ```bash
-curl --get --silent --show-error http://localhost:8081/api/cocktails/search \
+curl --get --silent --show-error http://localhost:8082/api/cocktails/search \
   --data-urlencode 'ingredient=dry gin' \
   --data-urlencode 'ingredient=lemon juice' | jq
 ```

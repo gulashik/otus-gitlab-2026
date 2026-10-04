@@ -16,9 +16,8 @@
   * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
 * [Add the SpringBoot app](#add-the-springboot-app)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
-  * [Link the subproject to the local GitLab repository](#link-the-subproject-to-the-local-gitlab-repository)
-  * [Wait for the GitLab pipeline will be completed](#wait-for-the-gitlab-pipeline-will-be-completed)
-  * [Prepare the subproject for GitHub commit clears its git folder](#prepare-the-subproject-for-github-commit-clears-its-git-folder-)
+  * [Publish the tracked application source to local GitLab](#publish-the-tracked-application-source-to-local-gitlab)
+  * [Verify feature and default-branch pipelines](#verify-feature-and-default-branch-pipelines)
 * [Restart the Gitlab in the background.](#restart-the-gitlab-in-the-background)
   * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
   * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
@@ -142,39 +141,34 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ./scripts/create-cocktail-search-project.sh
 ```
 
-## Link the subproject to the local GitLab repository
+## Link and Publish the subproject to the local GitLab repository
 ```bash
-cd ./projects/cocktail-search
-git init --initial-branch=main
-git add .
-git commit -m "inner project pushing"
-git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
-git -C projects/cocktail-search remote -v
-git branch -M main
-git push -u origin main
+git -C projects/cocktail-search init --initial-branch=main
+git -C projects/cocktail-search add .
+git -C projects/cocktail-search commit -m 'Publish application to local GitLab'
+git -C projects/cocktail-search remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
+git -C projects/cocktail-search push -u origin main
 ```
 
-## Wait for the GitLab pipeline will be completed
-Confirm the pipeline can be assigned to the newly registered `docker` Runner in the GitLab UI.
-A successful test pipeline proves checkout and the Runner's internal Docker test environment both work again.
-See UI get pass from the script output:
+## Verify feature and default-branch pipelines
+The initial push to `main` runs `test`, non-publishing `build_check`, and the
+automatic `stage` placeholder, then waits at the blocking manual `prod` job.
+Use **Play** for `prod` to complete its placeholder; neither deployment job
+operates Podman. A feature-branch push runs only `build_check`.
+
+Open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines` and confirm
+the jobs match the branch you pushed. Check GitLab readiness separately with:
 ```bash
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
     echo "not yet started"
 ```
 
-///====Before commit====///
-## Prepare the subproject for GitHub commit clears its git folder 
+## Prepare the application source for a root repository commit
 
 ```bash
 rm -rf ./projects/cocktail-search/.git
 ```
-```bash
-# git rm --cached projects/cocktail-search
-```
-
-///====///
 # Restart the Gitlab in the background.
 ## Suspend the training stand, keeping all container states intact. 
 ```bash

@@ -34,13 +34,13 @@ podman compose exec runner gitlab-runner verify</code></pre><p class="verify">Ve
 <article class="stage"><div class="head"><div><h2>Configure SSH trust and identity</h2><p>Safely record the server host key, then add your public key to GitLab.</p></div><label><input type="checkbox"> Complete</label></div><pre class="command"><button class="copy">Copy</button><code>./scripts/trust-local-gitlab-host-key.sh
 ./scripts/add-user-ssh-key.sh
 ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost</code></pre><p class="verify">Verify: SSH returns a GitLab greeting. The scripts use your public key, never your private key.</p></article>
-<article class="stage"><div class="head"><div><h2>Create and push the sample project</h2><p>Create <code>gulash-prj/cocktail-search</code>, make its first commit, and watch its pipeline run.</p></div><label><input type="checkbox"> Complete</label></div><pre class="command"><button class="copy">Copy</button><code>./scripts/create-cocktail-search-project.sh
+<article class="stage"><div class="head"><div><h2>Publish tracked application source</h2><p>Create <code>gulash-prj/cocktail-search</code> and publish the root-tracked application files through disposable nested Git metadata.</p></div><label><input type="checkbox"> Complete</label></div><pre class="command"><button class="copy">Copy</button><code>./scripts/create-cocktail-search-project.sh
 cd projects/cocktail-search
 git init --initial-branch=main
 git add .
-git commit -m "Initial project push"
+git commit -m "Publish application to local GitLab"
 git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
-git push -u origin main</code></pre><p class="verify">Verify: the project and a successful pipeline appear in GitLab.</p></article>
+git push -u origin main</code></pre><p class="verify">Verify: <code>main</code> runs <code>test</code>, <code>build_check</code>, and <code>stage</code>, then waits at manual <code>prod</code>. A feature branch runs only <code>build_check</code>.</p></article>
 </section>
 </main><script>
 (()=>{const key="otus-gitlab-lab-progress-v2",stages=[...document.querySelectorAll(".stage")],update=()=>{const done=stages.filter(s=>s.querySelector("input").checked).length;document.querySelector("#count").textContent=done+" of "+stages.length+" complete";document.querySelector("#bar").style.width=done/stages.length*100+"%";stages.forEach(s=>s.classList.toggle("done",s.querySelector("input").checked));localStorage.setItem(key,JSON.stringify(stages.map(s=>s.querySelector("input").checked)))};try{JSON.parse(localStorage.getItem(key)||"[]").forEach((v,i)=>{if(stages[i])stages[i].querySelector("input").checked=v})}catch(_){ }stages.forEach(s=>s.querySelector("input").addEventListener("change",update));update();document.querySelector("#reset").addEventListener("click",()=>{stages.forEach(s=>s.querySelector("input").checked=false);update()});document.querySelectorAll(".copy").forEach(b=>b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(b.parentElement.querySelector("code").innerText);b.textContent="Copied";setTimeout(()=>b.textContent="Copy",1200)}catch(_){b.textContent="Select text"}}))})();
