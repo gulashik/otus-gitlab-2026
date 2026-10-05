@@ -4,6 +4,7 @@
   * [Show and generate a Gitlab root password.](#show-and-generate-a-gitlab-root-password)
   * [Start Gitlab in the background.](#start-gitlab-in-the-background)
   * [Verify readiness and sign in](#verify-readiness-and-sign-in)
+* [Add a local OCI Registry](#add-a-local-oci-registry)
 * [Add and Register a Gitlab runner](#add-and-register-a-gitlab-runner)
   * [Build image: Ubuntu + Gitlab runner app + Docker app](#build-image-ubuntu--gitlab-runner-app--docker-app)
   * [Launch the Gitlab runner container and validate the docker image build process.](#launch-the-gitlab-runner-container-and-validate-the-docker-image-build-process)
@@ -30,7 +31,7 @@
 podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/gitlab-root-password.env ./projects/cocktail-search/.git
+rm -rf ./local/gitlab ./local/runner ./local/registry ./local/gitlab-root-password.env ./projects/cocktail-search/.git
 ```
 
 ## Show and generate a Gitlab root password.
@@ -75,6 +76,19 @@ Logs
 podman compose logs -f gitlab
 ```
 
+# Add a local OCI Registry
+
+```bash
+podman compose up -d registry
+until curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog >/dev/null; do
+  echo "not yet"
+  sleep 30
+done
+{ echo "Registry is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env }
+```
+
+Expected result: the last command returns a catalog such as `{"repositories":[]}`
+
 # Add and Register a Gitlab runner
 ## Build image: Ubuntu + Gitlab runner app + Docker app
 ```bash
@@ -103,6 +117,23 @@ Verify that the runner is registered by running the command podman or by checkin
 ```bash
 podman compose exec runner gitlab-runner verify
 ```
+
+## Verify Registry image round-trip transfer
+
+After registering the new Runner, verify the hand-off from CI Docker to Podman and vice versa.
+
+`--tls-verify=false` is deliberately restricted to this local HTTP endpoint.
+
+```bash
+export OCI_TEST_IMAGE=registry.localhost:5000/learning/registry-check:1
+podman compose exec -T runner docker pull alpine:3
+podman compose exec -T runner docker tag alpine:3 "$OCI_TEST_IMAGE"
+podman compose exec -T runner docker push "$OCI_TEST_IMAGE"
+podman compose exec -T runner docker image inspect "$OCI_TEST_IMAGE" --format 'ID={{.Id}} Size={{.Size}} RepoDigests={{json .RepoDigests}}'
+podman pull --tls-verify=false "$OCI_TEST_IMAGE"
+```
+
+Expected result: Docker reports a pushed digest and Podman pulls the same image.
 
 # Configure the GitLab ssh key
 List an existing public key

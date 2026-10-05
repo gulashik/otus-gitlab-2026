@@ -16,4 +16,4 @@ check_interval = 0
     privileged = false
     disable_cache = true
     volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
-    extra_hosts = ["gitlab.local:host-gateway"]
+    extra_hosts = ["gitlab.local:host-gateway", "registry.localhost:host-gateway"]

@@ -1,5 +1,13 @@
 
 services:
+  registry:
+    image: registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./local/registry/data:/var/lib/registry
+
   gitlab:
     image: gitlab/gitlab-ce:18.4.2-ce.0
     hostname: localhost
@@ -31,10 +39,13 @@ services:
     privileged: true # Required only for the Docker daemon inside this trusted local lab.
     depends_on:
       - gitlab
+      - registry
     extra_hosts:
       # The Runner itself reaches its local proxy at 127.0.0.1.
       # Docker jobs use the host-gateway mapping supplied by config.toml.
       - "gitlab.local:127.0.0.1"
+      # The nested Docker daemon reaches the outer Compose Registry via socat.
+      - "registry.localhost:127.0.0.1"
     volumes:
       - ./local/runner/config:/etc/gitlab-runner
       - ./local/runner/docker:/var/lib/docker
