@@ -100,6 +100,21 @@ else
   fail "Could not look up project ${project_full_path} (HTTP ${project_status})"
 fi
 
+# Enables the project’s CI job token to push release Git tags back to the repository.
+project_id="$(jq -er '.id' <<<"$project_body")" \
+  || fail "GitLab returned an invalid project"
+project_response="$(api_response --request PUT \
+  --data-urlencode 'ci_push_repository_for_job_token_allowed=true' \
+  "${gitlab_url}/api/v4/projects/${project_id}")" \
+  || fail "Could not enable CI job-token tag pushes for ${project_full_path}"
+project_status="${project_response##*$'\n'}"
+project_body="${project_response%$'\n'*}"
+[[ "$project_status" == "200" ]] \
+  || fail "Could not enable CI job-token tag pushes for ${project_full_path} (HTTP ${project_status})"
+jq -e '.ci_push_repository_for_job_token_allowed == true' <<<"$project_body" >/dev/null \
+  || fail "GitLab did not enable CI job-token tag pushes for ${project_full_path}"
+printf 'Enabled CI job-token repository pushes for "%s".\n' "$project_full_path"
+
 ssh_url="$(jq -er '.ssh_url_to_repo' <<<"$project_body")" \
   || fail "GitLab did not return an SSH clone URL"
 expected_ssh_url="ssh://git@localhost:2222/${project_full_path}.git"
