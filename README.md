@@ -6,7 +6,7 @@ This repository is a hands-on, local GitLab CE learning lab for  [OTUS course](h
 
 - macOS with Podman and Podman Compose (Docker Compose also works for the GitLab service).
 - Bash, Git, OpenSSH, `curl`, and `jq` etc.
-- Podman machine with 16 GB of memory, sufficient disk space, and host ports `8929`, `2222`, and `5000` available.
+- Podman machine with 16 GB of memory, sufficient disk space, and host ports `8929`, `2222`, `5000`, `8083`, and `8084` available.
 
 The lab stores its GitLab data and local credentials under `local/`. Those files are intentionally ignored and must never be committed or shared.
 

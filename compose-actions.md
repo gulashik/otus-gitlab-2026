@@ -11,14 +11,22 @@
     * [docker app check](#docker-app-check)
     * [runner app check](#runner-app-check)
   * [Register the Gitlab runner for the group `gulash-prj`](#register-the-gitlab-runner-for-the-group-gulash-prj)
+  * [Verify Registry image round-trip transfer](#verify-registry-image-round-trip-transfer)
 * [Configure the GitLab ssh key](#configure-the-gitlab-ssh-key)
   * [Verify and trust the SSH host key of the local GitLab learning instance](#verify-and-trust-the-ssh-host-key-of-the-local-gitlab-learning-instance)
   * [Register the public SSH key for a local GitLab root through the GitLab API](#register-the-public-ssh-key-for-a-local-gitlab-root-through-the-gitlab-api)
   * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
 * [Add the SpringBoot app](#add-the-springboot-app)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
-  * [Publish the tracked application source to local GitLab](#publish-the-tracked-application-source-to-local-gitlab)
-  * [Verify feature and default-branch pipelines](#verify-feature-and-default-branch-pipelines)
+  * [Link and Publish the subproject to the local GitLab repository](#link-and-publish-the-subproject-to-the-local-gitlab-repository)
+* [Deploy Cocktail Search environments](#deploy-cocktail-search-environments)
+  * [Gitlab credentials](#gitlab-credentials)
+  * [Verify automatic deployment to STAGE](#verify-automatic-deployment-to-stage)
+    * [STAGE readiness check](#stage-readiness-check)
+    * [STAGE UI](#stage-ui)
+  * [Manual action: deploy PROD](#manual-action-deploy-prod)
+    * [PROD readiness check](#prod-readiness-check)
+    * [PROD UI](#prod-ui)
 * [Restart the Gitlab in the background.](#restart-the-gitlab-in-the-background)
   * [Suspend the training stand, keeping all container states intact.](#suspend-the-training-stand-keeping-all-container-states-intact-)
   * [Resume the training stand, restoring all container states.](#resume-the-training-stand-restoring-all-container-states)
@@ -181,19 +189,44 @@ git -C projects/cocktail-search remote add origin ssh://git@localhost:2222/gulas
 git -C projects/cocktail-search push -u origin main
 ```
 
-Open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines`
-See GitLab readiness and pass separately with:
+# Deploy Cocktail Search environments
+
+## Gitlab credentials
 ```bash
 curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
   { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
     echo "not yet started"
 ```
 
-## Prepare the application source for a root repository commit
+## Verify automatic deployment to STAGE
 
+After pushing `main`, open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines`. 
+The pipeline runs `test`, `build_check`, and `version`, then automatically starts `deploy_stage`.
+
+### STAGE readiness check
 ```bash
-rm -rf ./projects/cocktail-search/.git
+curl --fail --silent --show-error http://localhost:8083/actuator/health | jq
 ```
+
+### STAGE UI
+```bash
+open http://localhost:8083/
+```
+
+## Manual action: deploy PROD
+
+After `deploy_stage` succeeds, need to trigger a  `deploy_prod` job. 
+
+### PROD readiness check
+```bash
+curl --fail --silent --show-error http://localhost:8084/actuator/health | jq
+```
+
+### PROD UI
+```bash
+open http://localhost:8084/
+```
+
 # Restart the Gitlab in the background.
 ## Suspend the training stand, keeping all container states intact. 
 ```bash

@@ -4,6 +4,9 @@
 # - main push or run pipeline for main: test -> build_check -> version -> stage -> manual prod
 # - run pipeline for a non-default branch: build_check
 
+include:
+  - local: ci/deploy-environments.yml
+
 default:
   tags:
     - docker
@@ -134,31 +137,8 @@ version:
     reports:
       dotenv: version.env
 
-#====== DEPLOY ======
-deploy_stage:
-  stage: deploy_nonprod
-  image: alpine:3.21
-  rules:
-    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-  needs:
-    - job: version
-      artifacts: true
-  environment:
-    name: stage
-  script:
-    - echo "Stage environment recorded for ${APP_IMAGE_REF} (version ${APP_VERSION}). Real Podman deployment is deferred."
+#====== DEPLOY NON-PROD ======
+# include with deploy-environments.yml
 
-deploy_prod:
-  stage: deploy_prod
-  image: alpine:3.21
-  rules:
-    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-  when: manual
-  allow_failure: false
-  needs:
-    - job: deploy_stage
-      artifacts: false
-  environment:
-    name: prod
-  script:
-    - echo 'Production environment recorded. Real Podman deployment is deferred.'
+#====== DEPLOY PROD ======
+# include with deploy-environments.yml

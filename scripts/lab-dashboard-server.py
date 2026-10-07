@@ -81,7 +81,7 @@ class Handler(BaseHTTPRequestHandler):
    job_id=parse_qs(request.query).get("id",[""])[0]
    with LOCK: job=dict(JOBS[job_id]) if job_id in JOBS else None
    return self.json(HTTPStatus.OK,job) if job else self.json(HTTPStatus.NOT_FOUND,{"error":"Unknown job."})
-  static={"/":(PAGE,"text/html; charset=utf-8"),"/lab-progress.html":(PAGE,"text/html; charset=utf-8"),"/compose-actions.md":(GUIDE,"text/markdown; charset=utf-8"),"/steps/02_create-cocktail-search-gitlab-project/README.md":(ROOT/"steps/02_create-cocktail-search-gitlab-project/README.md","text/markdown; charset=utf-8")}.get(request.path)
+  static={"/":(PAGE,"text/html; charset=utf-8"),"/lab-progress.html":(PAGE,"text/html; charset=utf-8"),"/compose-actions.md":(GUIDE,"text/markdown; charset=utf-8"),"/projects/cocktail-search/README.md":(ROOT/"projects/cocktail-search/README.md","text/markdown; charset=utf-8"),"/steps/02_create-cocktail-search-gitlab-project/README.md":(ROOT/"steps/02_create-cocktail-search-gitlab-project/README.md","text/markdown; charset=utf-8")}.get(request.path)
   if not static: return self.send_error(HTTPStatus.NOT_FOUND,"Only dashboard files are served.")
   body=static[0].read_bytes(); self.send_response(HTTPStatus.OK); self.send_header("Content-Type",static[1]); self.send_header("Content-Length",str(len(body))); self.end_headers(); self.wfile.write(body)
  def do_POST(self):

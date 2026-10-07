@@ -49,3 +49,7 @@ services:
     volumes:
       - ./local/runner/config:/etc/gitlab-runner
       - ./local/runner/docker:/var/lib/docker
+    ports:
+      # Forward workloads published by the Runner's internal Docker daemon.
+      - "127.0.0.1:8083:8083"
+      - "127.0.0.1:8084:8084"
