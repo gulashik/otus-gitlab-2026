@@ -1,0 +1,40 @@
+.deploy_environment:
+  image: docker:29-cli
+  variables:
+    DOCKER_HOST: unix:///var/run/docker.sock
+  rules:
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - ./scripts/deploy-environment.sh "$ENVIRONMENT_NAME" "$ENVIRONMENT_PORT" "$APP_IMAGE_REF"
+
+deploy_stage:
+  extends: .deploy_environment
+  stage: deploy_nonprod
+  variables:
+    ENVIRONMENT_NAME: stage
+    ENVIRONMENT_PORT: "8083"
+  needs:
+    - job: version
+      artifacts: true
+  environment:
+    name: stage
+    url: http://localhost:8083
+
+deploy_prod:
+  extends: .deploy_environment
+  stage: deploy_prod
+  variables:
+    ENVIRONMENT_NAME: prod
+    ENVIRONMENT_PORT: "8084"
+  when: manual
+  allow_failure: false
+  needs:
+    - job: version
+      artifacts: true
+    - job: deploy_stage
+      artifacts: false
+  environment:
+    name: prod
+    url: http://localhost:8084
