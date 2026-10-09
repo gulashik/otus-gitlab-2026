@@ -1,0 +1,26 @@
+validate_branch_name:
+  stage: test
+  image: alpine:3.21
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - |
+      case "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" in
+        feature/*|bugfix/*|hotfix/*)
+          echo "Accepted merge-request source branch: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+          ;;
+        *)
+          echo "Invalid merge-request source branch: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+          echo "Use a branch beginning with feature/, bugfix/, or hotfix/."
+          exit 1
+          ;;
+      esac
+
+test:
+  stage: test
+  image: eclipse-temurin:21-jdk
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  script:
+    - ./gradlew test --no-daemon

@@ -7,7 +7,7 @@
   before_script:
     - apk add --no-cache bash
   script:
-    - ./scripts/deploy-environment.sh "$ENVIRONMENT_NAME" "$ENVIRONMENT_PORT" "$APP_IMAGE_REF"
+    - ./ci/stages/scripts/deploy-environment.sh "$ENVIRONMENT_NAME" "$ENVIRONMENT_PORT" "$APP_IMAGE_REF"
 
 deploy_stage:
   extends: .deploy_environment
@@ -16,7 +16,7 @@ deploy_stage:
     ENVIRONMENT_NAME: stage
     ENVIRONMENT_PORT: "8083"
   needs:
-    - job: version
+    - job: version_and_realease
       artifacts: true
   environment:
     name: stage
@@ -31,7 +31,7 @@ deploy_prod:
   when: manual
   allow_failure: false
   needs:
-    - job: version
+    - job: version_and_realease
       artifacts: true
     - job: deploy_stage
       artifacts: false

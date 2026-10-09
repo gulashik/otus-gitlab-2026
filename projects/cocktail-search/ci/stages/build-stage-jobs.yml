@@ -1,0 +1,11 @@
+build_check:
+  stage: build
+  image: docker:29-cli
+  variables:
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_BUILDKIT: "0"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - docker build --pull --file Containerfile --tag "cocktail-search-build-check:${CI_COMMIT_SHA}" .

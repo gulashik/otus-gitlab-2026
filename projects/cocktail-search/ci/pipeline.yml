@@ -1,0 +1,32 @@
+# Pipeline map:
+# - feature branch push: build_check
+# - MR pipeline: test + validate_branch_name -> build_check
+# - main push or run pipeline for main: test -> build_check -> version -> stage -> manual prod
+# - run pipeline for a non-default branch: build_check
+
+include:
+  - local: ci/stages/test-stage-jobs.yml
+  - local: ci/stages/build-stage-jobs.yml
+  - local: ci/stages/version-release-stage-jobs.yml
+  - local: ci/stages/deploy-stage-jobs.yml
+
+workflow:
+  rules:
+    # After an MR is opened, use its MR pipeline instead of a duplicate push pipeline.
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+default:
+  tags:
+    - docker
+
+stages:
+  - test
+  - build
+  - version_and_realease
+  - deploy_nonprod
+  - deploy_prod
