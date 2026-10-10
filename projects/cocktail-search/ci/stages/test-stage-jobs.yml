@@ -2,7 +2,7 @@ validate_branch_name:
   stage: test
   image: alpine:3.21
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: !reference [.rules, merge_event]
   script:
     - |
       case "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" in
@@ -20,7 +20,7 @@ test:
   stage: test
   image: eclipse-temurin:21-jdk
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: !reference [.rules, merge_event]
+    - if: !reference [.rules, trigger-full-pipeline-sources]
   script:
     - ./gradlew test --no-daemon

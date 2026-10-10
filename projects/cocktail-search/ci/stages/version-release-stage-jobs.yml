@@ -8,7 +8,7 @@ version_and_realease:
     GIT_DEPTH: "0"
     REGISTRY_IMAGE: registry.localhost:5000/gulash-prj/cocktail-search
   rules:
-    - if: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: !reference [.rules, trigger-full-pipeline-sources]
   before_script:
     - apk add --no-cache bash git
     - git fetch --tags origin
