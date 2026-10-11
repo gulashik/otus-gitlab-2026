@@ -3,7 +3,8 @@
 set -euo pipefail
 
 readonly kubeconfig_dir="local/kubeconfig"
-readonly kubeconfig_path="${kubeconfig_dir}/deployer.conf"
+readonly deployer_kubeconfig_path="${kubeconfig_dir}/deployer.conf"
+readonly freelens_kubeconfig_path="${kubeconfig_dir}/freelens-admin.conf"
 readonly service_account="cocktail-deployer"
 readonly identity_namespace="cocktail-stage"
 readonly namespaces=(cocktail-stage cocktail-prod)
@@ -68,8 +69,8 @@ ca_data="$(podman compose exec -T k3s cat /var/lib/rancher/k3s/server/tls/server
 
 umask 077
 mkdir -p "$kubeconfig_dir"
-temporary_path="${kubeconfig_path}.tmp"
-cat >"$temporary_path" <<YAML
+deployer_temporary_path="${deployer_kubeconfig_path}.tmp"
+cat >"$deployer_temporary_path" <<YAML
 apiVersion: v1
 kind: Config
 clusters:
@@ -89,6 +90,19 @@ users:
     user:
       token: ${token}
 YAML
-mv "$temporary_path" "$kubeconfig_path"
-chmod 0600 "$kubeconfig_path"
-printf 'Kubernetes bootstrap complete. Local deploy kubeconfig written without printing its credential.\n'
+mv "$deployer_temporary_path" "$deployer_kubeconfig_path"
+chmod 0600 "$deployer_kubeconfig_path"
+
+# K3s keeps its built-in administrator configuration inside the container.
+# Rewrite only its internal loopback API address so a host desktop client can
+# use the TLS name explicitly configured in compose.yml.
+freelens_temporary_path="${freelens_kubeconfig_path}.tmp"
+podman compose exec -T k3s cat /etc/rancher/k3s/k3s.yaml \
+  | sed 's#server: https://127.0.0.1:6443#server: https://k3s.localhost:6443#' \
+  >"$freelens_temporary_path"
+grep -Fq 'server: https://k3s.localhost:6443' "$freelens_temporary_path" \
+  || fail "Could not prepare the host-reachable Freelens administrator kubeconfig"
+mv "$freelens_temporary_path" "$freelens_kubeconfig_path"
+chmod 0600 "$freelens_kubeconfig_path"
+
+printf 'Kubernetes bootstrap complete. Restricted deployer kubeconfig and full-access local Freelens kubeconfig written without printing credentials.\n'

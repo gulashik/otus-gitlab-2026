@@ -15,5 +15,10 @@ The lab stores its GitLab data and local credentials under `local/`. Those files
 ```bash
 ./scripts/start-lab-dashboard.sh
 ```
+
+## Use Freelens app
+
+Catalog → Cluster import `local/kubeconfig/freelens-admin.conf` into Freelens.
+
 ## See also
 - [compose-actions.md](compose-actions.md) — the existing command-by-command guide for starting, restarting, and configuring the local GitLab lab.
