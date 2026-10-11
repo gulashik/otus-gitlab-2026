@@ -15,5 +15,7 @@ check_interval = 0
     image = "alpine:3"
     privileged = false
     disable_cache = true
-    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
-    extra_hosts = ["gitlab.local:host-gateway", "registry.localhost:host-gateway"]
+    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock", "/local/kubeconfig/deployer.conf:/etc/kubernetes/deployer.conf:ro"]
+    # dockerd runs inside this Runner and owns the fixed 172.17.0.0/16 bridge.
+    # Its gateway reaches the explicit Runner proxies without any host socket.
+    extra_hosts = ["gitlab.local:172.17.0.1", "registry.localhost:172.17.0.1", "k3s.localhost:172.17.0.1"]

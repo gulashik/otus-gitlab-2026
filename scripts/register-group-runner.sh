@@ -124,7 +124,9 @@ podman compose exec -T runner gitlab-runner register --non-interactive \
   --executor docker \
   --docker-host unix:///var/run/docker.sock \
   --docker-image alpine:3 \
-  --docker-extra-hosts gitlab.local:host-gateway \
+  --docker-extra-hosts gitlab.local:172.17.0.1 \
+  --docker-extra-hosts registry.localhost:172.17.0.1 \
+  --docker-extra-hosts k3s.localhost:172.17.0.1 \
   --clone-url "$runner_gitlab_url"
 
 podman compose exec -T runner gitlab-runner verify

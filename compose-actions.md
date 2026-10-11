@@ -1,10 +1,10 @@
 <!-- TOC -->
 * [Recreate Gitlab instance](#recreate-gitlab-instance)
   * [Clear the current Gitlab instance](#clear-the-current-gitlab-instance)
-  * [Show and generate a Gitlab root password.](#show-and-generate-a-gitlab-root-password)
-  * [Start Gitlab in the background.](#start-gitlab-in-the-background)
-  * [Verify readiness and sign in](#verify-readiness-and-sign-in)
-* [Add a local OCI Registry](#add-a-local-oci-registry)
+  * [Generate and show a Gitlab root password.](#generate-and-show-a-gitlab-root-password)
+  * [Start Gitlab in the background and verify readiness and sign in](#start-gitlab-in-the-background-and-verify-readiness-and-sign-in)
+* [Start a local OCI Registry](#start-a-local-oci-registry)
+* [Start and bootstrap Kubernetes](#start-and-bootstrap-kubernetes)
 * [Add and Register a Gitlab runner](#add-and-register-a-gitlab-runner)
   * [Build image: Ubuntu + Gitlab runner app + Docker app](#build-image-ubuntu--gitlab-runner-app--docker-app)
   * [Launch the Gitlab runner container and validate the docker image build process.](#launch-the-gitlab-runner-container-and-validate-the-docker-image-build-process)
@@ -39,63 +39,61 @@
 podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/registry ./local/gitlab-root-password.env ./projects/cocktail-search/.git
+rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/cocktail-search/.git
 ```
 
-## Show and generate a Gitlab root password.
+## Generate and show a Gitlab root password.
 GitLab reads the initial password setting only when it creates its first database.
 `./scripts/initialize-gitlab.sh --replace` intentionally generates a new file, but **does not change the password in an already-created GitLab database**.
 ```bash
-clear
 ./scripts/initialize-gitlab.sh
-clear
 echo 'login: root' && \
 grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env
 ```
 
-## Start Gitlab in the background.
-Up
+## Start Gitlab in the background and verify readiness and sign in
+
 ```bash
 podman compose up -d gitlab
-```
-Down if needed
-```bash
-podman stop -a && podman rm -a && \
-podman ps -a
-```
-
-## Verify readiness and sign in
-Check that the sign-in page responds – wait loop
-```bash
 until curl --fail --silent --show-error http://localhost:8929/users/sign_in >/dev/null; do
   echo "not yet"
   sleep 30
 done
-{ echo "GitLab is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env }
-```
-Check that the sign-in page responds – manually
-```bash
-curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
-  { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env } || \
-    echo "not yet"
-```
-Logs
-```bash
-podman compose logs -f gitlab
+{ echo "GitLab is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env; }
 ```
 
-# Add a local OCI Registry
+# Start a local OCI Registry
 
 ```bash
 podman compose up -d registry
 until curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog >/dev/null; do
   echo "not yet"
-  sleep 30
+  sleep 10
 done
-{ echo "Registry is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env }
+{ echo "Registry is ready" && curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env; }
 ```
 
 Expected result: the last command returns a catalog such as `{"repositories":[]}`
+
+# Start and bootstrap Kubernetes
+
+```bash
+podman compose up -d k3s
+k3s_container_id="$(podman compose ps -q k3s)"
+until [[ "$(podman inspect --format '{{.State.Health.Status}}' "$k3s_container_id")" == "healthy" ]]; do
+  echo "K3s is not ready yet"
+  sleep 5
+done
+echo "K3s is ready"
+./scripts/bootstrap-kubernetes.sh
+```
+
+Inspect the two isolated environments after deployment:
+
+```bash
+podman compose exec -T k3s kubectl get all,pvc -n cocktail-stage
+podman compose exec -T k3s kubectl get all,pvc -n cocktail-prod
+```
 
 # Add and Register a Gitlab runner
 ## Build image: Ubuntu + Gitlab runner app + Docker app

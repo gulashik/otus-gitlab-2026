@@ -14,20 +14,24 @@ TOKEN, JOBS, LOCK = secrets.token_urlsafe(32), {}, threading.Lock()
 
 # No command comes from the browser. This is the complete command allow-list.
 ACTIONS = {
- "clear-lab": ("Clear the current GitLab instance", [["bash","-lc",'''podman stop -a && podman rm -a && \
+ "clear-lab": ("Destructively reset the complete learning lab", [["bash","-lc",'''podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/registry ./local/gitlab-root-password.env ./projects/cocktail-search/.git''']]),
+rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/cocktail-search/.git''']]),
  "initialize": ("Initialize local credentials", [["./scripts/initialize-gitlab.sh"]]),
  "start-gitlab": ("Start GitLab CE", [["podman","compose","up","-d","gitlab"]]),
- "wait-gitlab": ("Wait for GitLab readiness", [["python3","-c",'''import sys,time,urllib.request
-for attempt in range(1,21):
- try:
-  response=urllib.request.urlopen("http://localhost:8929/users/sign_in",timeout=10)
-  print(f"GitLab is ready (HTTP {response.status})."); sys.exit(0)
- except Exception as error: print(f"Attempt {attempt}/20: not ready ({error}).",flush=True); time.sleep(30)
-sys.exit("GitLab did not become ready within 10 minutes.")''']]),
- "start-registry": ("Start local OCI Registry", [["podman","compose","up","-d","registry"],["bash","-lc","for attempt in $(seq 1 20); do if curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog >/dev/null; then exit 0; fi; echo \"Registry is not ready yet.\"; sleep 3; done; exit 1"]]),
+ "wait-gitlab": ("Wait for GitLab readiness and show local sign-in details", [["bash","-lc",'''until curl --fail --silent --show-error http://localhost:8929/users/sign_in >/dev/null; do
+  echo "not yet"
+  sleep 30
+done
+{ echo "GitLab is ready" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env; }''']]),
+ "start-registry": ("Start local OCI Registry", [["podman","compose","up","-d","registry"],["bash","-lc",'''until curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog >/dev/null; do
+  echo "not yet"
+  sleep 10
+done
+{ echo "Registry is ready" && curl --fail --silent --show-error http://127.0.0.1:5000/v2/_catalog && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env; }''']]),
+ "start-k3s": ("Start local K3s", [["podman","compose","up","-d","k3s"],["bash","-lc","for attempt in $(seq 1 60); do if podman inspect --format '{{.State.Health.Status}}' $(podman compose ps -q k3s) 2>/dev/null | grep -qx healthy; then echo 'K3s is ready.'; exit 0; fi; echo 'K3s is not ready yet.'; sleep 5; done; exit 1"]]),
+ "bootstrap-k3s": ("Bootstrap Kubernetes deployment access", [["./scripts/bootstrap-kubernetes.sh"]]),
  "start-runner": ("Build and start Runner", [["podman","compose","build","runner"],["podman","compose","up","-d","runner"],["podman","compose","exec","runner","docker","info"],["podman","compose","exec","runner","gitlab-runner","--version"]]),
  "register-runner": ("Register group Runner", [["./scripts/register-group-runner.sh"],["podman","compose","exec","runner","gitlab-runner","verify"]]),
  "verify-registry-transfer": ("Verify Registry image transfer", [["podman","compose","exec","-T","runner","docker","pull","alpine:3"],["podman","compose","exec","-T","runner","docker","tag","alpine:3","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","push","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","image","inspect","registry.localhost:5000/learning/registry-check:dashboard","--format","ID={{.Id}} Size={{.Size}} RepoDigests={{json .RepoDigests}}"],["podman","pull","--tls-verify=false","registry.localhost:5000/learning/registry-check:dashboard"]]),
@@ -45,7 +49,7 @@ git push -u origin main''']]),
 echo "not yet"''']]),
  "launch-all": ("Launch the complete learning lab", []),
 }
-LAUNCH_ORDER = ["clear-lab", "initialize", "start-gitlab", "wait-gitlab", "start-registry", "start-runner", "register-runner", "verify-registry-transfer", "configure-ssh", "create-project"]
+LAUNCH_ORDER = ["clear-lab", "initialize", "start-gitlab", "wait-gitlab", "start-registry", "start-k3s", "bootstrap-k3s", "start-runner", "register-runner", "verify-registry-transfer", "configure-ssh", "create-project"]
 
 def run_job(job_id, action_id):
  def append(text):

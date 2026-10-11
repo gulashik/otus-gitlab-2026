@@ -1,7 +1,8 @@
 .deploy_environment:
-  image: docker:29-cli
-  variables:
-    DOCKER_HOST: unix:///var/run/docker.sock
+  image:
+    name: alpine/k8s:1.31.5
+  # The pinned image contains kubectl and sed. Bash is installed for the
+  # readable deploy script; this trusted local job has no host runtime socket.
   rules:
     - if: !reference [.rules, trigger-full-pipeline-sources]
   before_script:
@@ -14,7 +15,7 @@ deploy_stage:
   stage: deploy_nonprod
   variables:
     ENVIRONMENT_NAME: stage
-    ENVIRONMENT_PORT: "8083"
+    ENVIRONMENT_PORT: "30083"
   needs:
     - job: version_and_realease
       artifacts: true
@@ -27,7 +28,7 @@ deploy_prod:
   stage: deploy_prod
   variables:
     ENVIRONMENT_NAME: prod
-    ENVIRONMENT_PORT: "8084"
+    ENVIRONMENT_PORT: "30084"
   when: manual
   allow_failure: false
   needs:
