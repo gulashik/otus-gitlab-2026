@@ -36,14 +36,7 @@ done
  "register-runner": ("Register group Runner", [["./scripts/register-group-runner.sh"],["podman","compose","exec","runner","gitlab-runner","verify"]]),
  "verify-registry-transfer": ("Verify Registry image transfer", [["podman","compose","exec","-T","runner","docker","pull","alpine:3"],["podman","compose","exec","-T","runner","docker","tag","alpine:3","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","push","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","image","inspect","registry.localhost:5000/learning/registry-check:dashboard","--format","ID={{.Id}} Size={{.Size}} RepoDigests={{json .RepoDigests}}"],["podman","pull","--tls-verify=false","registry.localhost:5000/learning/registry-check:dashboard"]]),
  "configure-ssh": ("Configure SSH trust and identity", [["./scripts/trust-local-gitlab-host-key.sh"],["./scripts/add-user-ssh-key.sh"],["bash","-lc",'ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost; status=$?; test "$status" -eq 1 -o "$status" -eq 0']]),
- "create-ci-project": ("Publish tracked shared CI configuration", [["bash","-lc",'''set -e
-./scripts/create-ci-project.sh
-cd projects/ci
-git init --initial-branch=main
-git add pipeline.yml common stages
-git commit -m "Publish shared CI configuration"
-git remote add origin ssh://git@localhost:2222/gulash-prj/ci.git
-git push -u origin main''']]),
+ "create-ci-project": ("Publish tracked shared CI configuration", [["./scripts/publish-ci-project.sh"]]),
  "create-project": ("Publish tracked application source", [["bash","-lc",'''set -e
 ./scripts/create-cocktail-search-project.sh
 cd projects/cocktail-search

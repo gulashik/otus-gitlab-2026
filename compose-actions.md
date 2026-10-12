@@ -177,12 +177,7 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ## Register and publish shared CI project `gulash-prj/ci`
 
 ```bash
-./scripts/create-ci-project.sh
-git -C projects/ci init --initial-branch=main
-git -C projects/ci add pipeline.yml common stages
-git -C projects/ci commit -m 'Publish shared CI configuration'
-git -C projects/ci remote add origin ssh://git@localhost:2222/gulash-prj/ci.git
-git -C projects/ci push -u origin main
+./scripts/publish-ci-project.sh
 ```
 
 ## Register project `gulash-prj/cocktail-search`
