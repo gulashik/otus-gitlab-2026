@@ -115,6 +115,49 @@ jq -e '.ci_push_repository_for_job_token_allowed == true' <<<"$project_body" >/d
   || fail "GitLab did not enable CI job-token tag pushes for ${project_full_path}"
 printf 'Enabled CI job-token repository pushes for "%s".\n' "$project_full_path"
 
+# Allow only this application project's short-lived job tokens to clone the
+# private shared CI helpers during deployment jobs.
+ci_project_path="${group_path}/ci"
+ci_project_encoded_path="${group_path}%2Fci"
+ci_project_response="$(api_response "${gitlab_url}/api/v4/projects/${ci_project_encoded_path}")" \
+  || fail "Could not look up shared CI project ${ci_project_path}"
+ci_project_status="${ci_project_response##*$'\n'}"
+ci_project_body="${ci_project_response%$'\n'*}"
+[[ "$ci_project_status" == "200" ]] \
+  || fail "Shared CI project ${ci_project_path} must exist before ${project_full_path} (HTTP ${ci_project_status})"
+ci_project_id="$(jq -er '.id' <<<"$ci_project_body")" \
+  || fail "GitLab returned an invalid shared CI project"
+
+allowlist_response="$(api_response "${gitlab_url}/api/v4/projects/${ci_project_id}/job_token_scope/allowlist")" \
+  || fail "Could not read the job-token allowlist for ${ci_project_path}"
+allowlist_status="${allowlist_response##*$'\n'}"
+allowlist_body="${allowlist_response%$'\n'*}"
+[[ "$allowlist_status" == "200" ]] \
+  || fail "Could not read the job-token allowlist for ${ci_project_path} (HTTP ${allowlist_status})"
+if jq -e --argjson project_id "$project_id" --arg path "$project_full_path" \
+  '.[] | select(.id == $project_id and .path_with_namespace == $path)' <<<"$allowlist_body" >/dev/null; then
+  printf 'Job-token allowlist already contains "%s" for "%s".\n' "$project_full_path" "$ci_project_path"
+else
+  allowlist_response="$(api_response --request POST \
+    --data-urlencode "target_project_id=${project_id}" \
+    "${gitlab_url}/api/v4/projects/${ci_project_id}/job_token_scope/allowlist")" \
+    || fail "Could not allow ${project_full_path} to read ${ci_project_path} helpers"
+  allowlist_status="${allowlist_response##*$'\n'}"
+  [[ "$allowlist_status" == "201" ]] \
+    || fail "Could not allow ${project_full_path} to read ${ci_project_path} helpers (HTTP ${allowlist_status})"
+  printf 'Allowed "%s" job tokens to read "%s".\n' "$project_full_path" "$ci_project_path"
+fi
+
+allowlist_response="$(api_response "${gitlab_url}/api/v4/projects/${ci_project_id}/job_token_scope/allowlist")" \
+  || fail "Could not verify the job-token allowlist for ${ci_project_path}"
+allowlist_status="${allowlist_response##*$'\n'}"
+allowlist_body="${allowlist_response%$'\n'*}"
+[[ "$allowlist_status" == "200" ]] \
+  || fail "Could not verify the job-token allowlist for ${ci_project_path} (HTTP ${allowlist_status})"
+jq -e --argjson project_id "$project_id" --arg path "$project_full_path" \
+  '.[] | select(.id == $project_id and .path_with_namespace == $path)' <<<"$allowlist_body" >/dev/null \
+  || fail "GitLab allowlist does not contain ${project_full_path}"
+
 ssh_url="$(jq -er '.ssh_url_to_repo' <<<"$project_body")" \
   || fail "GitLab did not return an SSH clone URL"
 expected_ssh_url="ssh://git@localhost:2222/${project_full_path}.git"

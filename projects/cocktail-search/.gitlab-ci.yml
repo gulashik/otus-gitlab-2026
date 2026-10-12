@@ -1,2 +1,12 @@
 include:
-  - local: ci/pipeline.yml
+  - project: gulash-prj/ci
+    ref: main
+    file: /pipeline.yml
+
+variables:
+  SERVICE_REGISTRY_IMAGE: registry.localhost:5000/gulash-prj/cocktail-search
+  # Job containers reach the outer GitLab service through the Runner's
+  # documented trusted-local host alias, not their own localhost.
+  SHARED_CI_SERVER_URL: http://gitlab.local:8929
+  STAGE_NODE_PORT: "30083"
+  PROD_NODE_PORT: "30084"

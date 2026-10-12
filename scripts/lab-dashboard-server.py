@@ -17,7 +17,7 @@ ACTIONS = {
  "clear-lab": ("Destructively reset the complete learning lab", [["bash","-lc",'''podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/cocktail-search/.git''']]),
+rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/ci/.git ./projects/cocktail-search/.git''']]),
  "initialize": ("Initialize local credentials", [["./scripts/initialize-gitlab.sh"]]),
  "start-gitlab": ("Start GitLab CE", [["podman","compose","up","-d","gitlab"]]),
  "wait-gitlab": ("Wait for GitLab readiness and show local sign-in details", [["bash","-lc",'''until curl --fail --silent --show-error http://localhost:8929/users/sign_in >/dev/null; do
@@ -36,6 +36,14 @@ done
  "register-runner": ("Register group Runner", [["./scripts/register-group-runner.sh"],["podman","compose","exec","runner","gitlab-runner","verify"]]),
  "verify-registry-transfer": ("Verify Registry image transfer", [["podman","compose","exec","-T","runner","docker","pull","alpine:3"],["podman","compose","exec","-T","runner","docker","tag","alpine:3","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","push","registry.localhost:5000/learning/registry-check:dashboard"],["podman","compose","exec","-T","runner","docker","image","inspect","registry.localhost:5000/learning/registry-check:dashboard","--format","ID={{.Id}} Size={{.Size}} RepoDigests={{json .RepoDigests}}"],["podman","pull","--tls-verify=false","registry.localhost:5000/learning/registry-check:dashboard"]]),
  "configure-ssh": ("Configure SSH trust and identity", [["./scripts/trust-local-gitlab-host-key.sh"],["./scripts/add-user-ssh-key.sh"],["bash","-lc",'ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost; status=$?; test "$status" -eq 1 -o "$status" -eq 0']]),
+ "create-ci-project": ("Publish tracked shared CI configuration", [["bash","-lc",'''set -e
+./scripts/create-ci-project.sh
+cd projects/ci
+git init --initial-branch=main
+git add pipeline.yml common stages
+git commit -m "Publish shared CI configuration"
+git remote add origin ssh://git@localhost:2222/gulash-prj/ci.git
+git push -u origin main''']]),
  "create-project": ("Publish tracked application source", [["bash","-lc",'''set -e
 ./scripts/create-cocktail-search-project.sh
 cd projects/cocktail-search
@@ -49,7 +57,7 @@ git push -u origin main''']]),
 echo "not yet"''']]),
  "launch-all": ("Launch the complete learning lab", []),
 }
-LAUNCH_ORDER = ["clear-lab", "initialize", "start-gitlab", "wait-gitlab", "start-registry", "start-k3s", "bootstrap-k3s", "start-runner", "register-runner", "verify-registry-transfer", "configure-ssh", "create-project"]
+LAUNCH_ORDER = ["clear-lab", "initialize", "start-gitlab", "wait-gitlab", "start-registry", "start-k3s", "bootstrap-k3s", "start-runner", "register-runner", "verify-registry-transfer", "configure-ssh", "create-ci-project", "create-project"]
 
 def run_job(job_id, action_id):
  def append(text):

@@ -17,6 +17,7 @@
   * [Register the public SSH key for a local GitLab root through the GitLab API](#register-the-public-ssh-key-for-a-local-gitlab-root-through-the-gitlab-api)
   * [Test SSH without interactive host-key acceptance](#test-ssh-without-interactive-host-key-acceptance)
 * [Add the SpringBoot app](#add-the-springboot-app)
+  * [Register and publish shared CI project `gulash-prj/ci`](#register-and-publish-shared-ci-project-gulash-prjci)
   * [Register project `gulash-prj/cocktail-search`](#register-project-gulash-prjcocktail-search)
   * [Link and Publish the subproject to the local GitLab repository](#link-and-publish-the-subproject-to-the-local-gitlab-repository)
 * [Deploy Cocktail Search environments](#deploy-cocktail-search-environments)
@@ -39,7 +40,7 @@
 podman stop -a && podman rm -a && \
 podman rmi -f otus-gitlab-runner:local
 podman ps -a
-rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/cocktail-search/.git
+rm -rf ./local/gitlab ./local/runner ./local/registry ./local/k3s ./local/kubeconfig ./local/gitlab-root-password.env ./projects/ci/.git ./projects/cocktail-search/.git
 ```
 
 ## Generate and show a Gitlab root password.
@@ -173,6 +174,17 @@ ssh -o StrictHostKeyChecking=yes -p 2222 -T git@localhost
 ```
 
 # Add the SpringBoot app
+## Register and publish shared CI project `gulash-prj/ci`
+
+```bash
+./scripts/create-ci-project.sh
+git -C projects/ci init --initial-branch=main
+git -C projects/ci add pipeline.yml common stages
+git -C projects/ci commit -m 'Publish shared CI configuration'
+git -C projects/ci remote add origin ssh://git@localhost:2222/gulash-prj/ci.git
+git -C projects/ci push -u origin main
+```
+
 ## Register project `gulash-prj/cocktail-search`
 ```bash
 ./scripts/create-cocktail-search-project.sh
