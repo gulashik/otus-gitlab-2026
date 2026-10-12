@@ -1,0 +1,30 @@
+# Pipeline map:
+# - feature branch push: build_check
+# - MR pipeline: test + validate_branch_name -> build_check
+# - main push or run pipeline for main: test -> build_check -> version -> stage -> manual prod
+# - run pipeline for a non-default branch: build_check
+
+include:
+  - local: common/rules.yml
+  - local: stages/test-stage-jobs.yml
+  - local: stages/build-stage-jobs.yml
+  - local: stages/version-release-stage-jobs.yml
+  - local: stages/deploy-stage-jobs.yml
+
+workflow:
+  rules:
+    - if: !reference [.rules, exclude-duplicate-push-pipeline]
+      when: never
+    - if: !reference [.rules, permitted-pipeline-sources]
+    - when: never
+
+default:
+  tags:
+    - docker
+
+stages:
+  - test
+  - build
+  - version_and_realease
+  - deploy_nonprod
+  - deploy_prod
