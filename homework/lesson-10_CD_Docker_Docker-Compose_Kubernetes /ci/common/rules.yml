@@ -1,0 +1,13 @@
+.rules:
+  # After an MR is opened, use its MR pipeline instead of a duplicate push pipeline.
+  #   - if: !reference [.rules, exclude-duplicate-push-pipeline]
+  exclude-duplicate-push-pipeline: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+  # Pipelines triggered only by ...
+  #   - if: !reference [.rules, permitted-pipeline-sources]
+  permitted-pipeline-sources: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+  # The whole pipeline (all stages) triggered by ...
+  #   - if: !reference [.rules, trigger-full-pipeline-sources]
+  trigger-full-pipeline-sources: '($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  # Merge event
+  #   - if: !reference [.rules, merge_event]
+  merge_event: '$CI_PIPELINE_SOURCE == "merge_request_event"'
