@@ -13,11 +13,15 @@ cd projects/cocktail-search
 
 ```bash
 cd projects/cocktail-search
+export APP_IMAGE=registry.localhost:5000/gulash-prj/cocktail-search:local
 DB_NAME=cocktail_catalog \
 DB_USER=cocktail \
 DB_PASSWORD=cocktail-local-only \
 podman compose up -d postgres
-podman build --network host --tag cocktail-search:local .
+./gradlew --no-daemon jib \
+  -PimageName="$APP_IMAGE" \
+  -PallowInsecureRegistry=true
+podman pull --tls-verify=false "$APP_IMAGE"
 podman run --rm --name cocktail-search-container \
   --publish 8082:8080 \
   --env DB_HOST=host.containers.internal \
@@ -25,7 +29,7 @@ podman run --rm --name cocktail-search-container \
   --env DB_NAME=cocktail_catalog \
   --env DB_USER=cocktail \
   --env DB_PASSWORD=cocktail-local-only \
-  cocktail-search:local
+  "$APP_IMAGE"
 ```
 
 In another terminal, verify that it is ready:

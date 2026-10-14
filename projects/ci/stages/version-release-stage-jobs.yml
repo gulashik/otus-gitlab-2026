@@ -1,16 +1,13 @@
 version_and_realease:
   stage: version_and_realease
-  image: docker:29-cli
+  image: gradle:9.4.0-jdk21
   resource_group: versioning # serialize job concurrency exclude racing
   variables:
-    DOCKER_HOST: unix:///var/run/docker.sock
-    DOCKER_BUILDKIT: "0"
     GIT_DEPTH: "0"
     REGISTRY_IMAGE: $SERVICE_REGISTRY_IMAGE
   rules:
     - if: !reference [.rules, trigger-full-pipeline-sources]
   before_script:
-    - apk add --no-cache bash git
     - git fetch --tags origin
   script:
     - |
@@ -47,8 +44,9 @@ version_and_realease:
 
       APP_IMAGE_REF="${REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
       RELEASE_IMAGE_REF="${REGISTRY_IMAGE}:v${APP_VERSION}"
-      docker build --pull --file Containerfile --tag "$APP_IMAGE_REF" .
-      docker push "$APP_IMAGE_REF"
+      ./gradlew --no-daemon jib \
+        -PimageName="${APP_IMAGE_REF}" \
+        -PallowInsecureRegistry=true
       release_tag="v${APP_VERSION}"
       if ! git tag --points-at HEAD --list "$release_tag" | grep -qx "$release_tag"; then
         git config user.name 'GitLab CI release job'
@@ -56,8 +54,9 @@ version_and_realease:
         git tag -a "$release_tag" -m "Release ${release_tag}"
         git push origin "$release_tag"
       fi
-      docker tag "$APP_IMAGE_REF" "$RELEASE_IMAGE_REF"
-      docker push "$RELEASE_IMAGE_REF"
+      ./gradlew --no-daemon jib \
+        -PimageName="${RELEASE_IMAGE_REF}" \
+        -PallowInsecureRegistry=true
       printf 'APP_VERSION=%s\nAPP_IMAGE_REF=%s\n' "$APP_VERSION" "$APP_IMAGE_REF" > version.env
       BASH
   artifacts:

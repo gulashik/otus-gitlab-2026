@@ -4,6 +4,7 @@ plugins {
 	kotlin("plugin.jpa") version "2.3.21"
 	id("org.springframework.boot") version "4.1.1"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("com.google.cloud.tools.jib") version "3.4.5"
 }
 
 group = "com.gulash"
@@ -47,4 +48,26 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+val applicationImage = providers.gradleProperty("imageName")
+	.orElse(providers.environmentVariable("SERVICE_REGISTRY_IMAGE"))
+	.orElse("registry.localhost:5000/learning/cocktail-search")
+
+jib {
+	from {
+		image = "docker.io/library/eclipse-temurin@sha256:0c324fbe2e1455c3159184717440f3b52906ef82a39c4a6efc9edb401d31971a"
+	}
+	to {
+		image = applicationImage.get()
+	}
+	container {
+		user = "10001"
+	}
+	setAllowInsecureRegistries(
+		providers.gradleProperty("allowInsecureRegistry")
+			.map(String::toBoolean)
+			.orElse(false)
+			.get()
+	)
 }

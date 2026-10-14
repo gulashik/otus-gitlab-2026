@@ -1,10 +1,7 @@
 build_check:
   stage: build
-  image: docker:29-cli
-  variables:
-    DOCKER_HOST: unix:///var/run/docker.sock
-    DOCKER_BUILDKIT: "0"
+  image: gradle:9.4.0-jdk21
   rules:
     - if: !reference [.rules, permitted-pipeline-sources]
   script:
-    - docker build --pull --file Containerfile --tag "cocktail-search-build-check:${CI_COMMIT_SHA}" .
+    - ./gradlew --no-daemon jibBuildTar -PimageName="cocktail-search-build-check:${CI_COMMIT_SHA}"
