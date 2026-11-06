@@ -89,6 +89,7 @@ fi
 
 # This short-lived token exists only in this process. It is neither logged nor saved.
 access_token_response="$(curl --fail --silent --show-error --location \
+  --retry 12 --retry-delay 5 --retry-max-time 120 --retry-all-errors \
   --request POST \
   --header "PRIVATE-TOKEN: ${bootstrap_token}" \
   --header "Content-Type: application/json" \

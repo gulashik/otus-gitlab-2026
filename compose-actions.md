@@ -206,7 +206,7 @@ curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
 ## Verify automatic deployment to STAGE
 
 After pushing `main`, open `http://localhost:8929/gulash-prj/cocktail-search/-/pipelines`. 
-The pipeline runs `test`, `build_check`, and `version`, then automatically starts `deploy_stage`.
+The pipeline runs `test` stage, including `semgrep-sast` and `secret_detection`, then `build_check` and `version`, and automatically starts `deploy_stage`.
 
 ### STAGE readiness check
 ```bash

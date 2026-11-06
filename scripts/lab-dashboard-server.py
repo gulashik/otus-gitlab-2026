@@ -42,8 +42,13 @@ done
 cd projects/cocktail-search
 git init --initial-branch=main
 git add .
-git commit -m "Publish application to local GitLab"
-git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
+if git diff --cached --quiet && git rev-parse --verify HEAD >/dev/null 2>&1; then
+  echo "Application files are already committed; reusing the existing commit."
+else
+  git commit -m "Publish application to local GitLab"
+fi
+git remote get-url origin >/dev/null 2>&1 || \
+  git remote add origin ssh://git@localhost:2222/gulash-prj/cocktail-search.git
 git push -u origin main''']]),
  "show-login-password": ("Show GitLab sign-in password", [["bash","-lc",'''curl -fsS http://localhost:8929/users/sign_in >/dev/null && \
 { echo "it's ok" && grep '^GITLAB_ROOT_PASSWORD=' local/gitlab-root-password.env; } || \

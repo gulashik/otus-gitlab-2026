@@ -5,6 +5,8 @@
 # - run pipeline for a non-default branch: build_check
 
 include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
   - local: common/rules.yml
   - local: stages/test-stage-jobs.yml
   - local: stages/build-stage-jobs.yml

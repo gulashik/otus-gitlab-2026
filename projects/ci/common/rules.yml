@@ -11,3 +11,6 @@
   # Merge event
   #   - if: !reference [.rules, merge_event]
   merge_event: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  # Security analyzers run during review and full default-branch pipelines
+  #   - if: !reference [.rules, security_analyzers]
+  security_analyzers: '$CI_PIPELINE_SOURCE == "merge_request_event" || (($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH)'

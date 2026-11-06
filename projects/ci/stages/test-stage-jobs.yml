@@ -24,3 +24,19 @@ test:
     - if: !reference [.rules, trigger-full-pipeline-sources]
   script:
     - ./gradlew test --no-daemon
+
+semgrep-sast:
+  stage: test
+  tags:
+    - docker
+  allow_failure: false
+  rules:
+    - if: !reference [.rules, security_analyzers]
+
+secret_detection:
+  stage: test
+  tags:
+    - docker
+  allow_failure: false
+  rules:
+    - if: !reference [.rules, security_analyzers]
