@@ -1,0 +1,64 @@
+version_and_realease:
+  stage: version_and_realease
+  image: gradle:9.4.0-jdk21
+  resource_group: versioning # serialize job concurrency exclude racing
+  variables:
+    GIT_DEPTH: "0"
+    REGISTRY_IMAGE: $SERVICE_REGISTRY_IMAGE
+  rules:
+    - if: !reference [.rules, trigger-full-pipeline-sources]
+  before_script:
+    - git fetch --tags origin
+  script:
+    - |
+      bash -euo pipefail <<'BASH'
+      valid_tag_pattern='^v([0-9]+)\.([0-9]+)\.([0-9]+)$'
+      head_tag="$(git tag --points-at HEAD --list 'v*' \
+        | grep -E "$valid_tag_pattern" \
+        | sort -V \
+        | tail -n 1 || true)"
+
+      if [[ -n "$head_tag" ]]; then
+        APP_VERSION="${head_tag#v}"
+      else
+        base_tag="$(git tag --merged HEAD --list 'v*' \
+          | grep -E "$valid_tag_pattern" \
+          | sort -V \
+          | tail -n 1 || true)"
+        base_version="${base_tag#v}"
+        [[ -n "$base_tag" ]] || base_version='0.0.0'
+        IFS='.' read -r major minor patch <<<"$base_version"
+        commit_range="${base_tag:+${base_tag}..HEAD}"
+        commit_range="${commit_range:-HEAD}"
+
+        # vMAJOR.MINOR.PATCH - assemble a version
+        if git log --format='%B' "$commit_range" | grep -qE 'BREAKING CHANGE|\[major\]'; then
+          APP_VERSION="$((major + 1)).0.0"
+        elif git log --merges --format='%s' "$commit_range" \
+          | grep -qE "^Merge branch 'feature/[^']+' into '"; then
+          APP_VERSION="${major}.$((minor + 1)).0"
+        else
+          APP_VERSION="${major}.${minor}.$((patch + 1))"
+        fi
+      fi
+
+      APP_IMAGE_REF="${REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
+      RELEASE_IMAGE_REF="${REGISTRY_IMAGE}:v${APP_VERSION}"
+      ./gradlew --no-daemon jib \
+        -PimageName="${APP_IMAGE_REF}" \
+        -PallowInsecureRegistry=true
+      release_tag="v${APP_VERSION}"
+      if ! git tag --points-at HEAD --list "$release_tag" | grep -qx "$release_tag"; then
+        git config user.name 'GitLab CI release job'
+        git config user.email 'gitlab-ci@localhost'
+        git tag -a "$release_tag" -m "Release ${release_tag}"
+        git push origin "$release_tag"
+      fi
+      ./gradlew --no-daemon jib \
+        -PimageName="${RELEASE_IMAGE_REF}" \
+        -PallowInsecureRegistry=true
+      printf 'APP_VERSION=%s\nAPP_IMAGE_REF=%s\n' "$APP_VERSION" "$APP_IMAGE_REF" > version.env
+      BASH
+  artifacts:
+    reports:
+      dotenv: version.env

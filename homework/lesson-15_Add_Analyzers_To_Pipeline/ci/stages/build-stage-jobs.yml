@@ -1,0 +1,7 @@
+build_check:
+  stage: build
+  image: gradle:9.4.0-jdk21
+  rules:
+    - if: !reference [.rules, permitted-pipeline-sources]
+  script:
+    - ./gradlew --no-daemon jibBuildTar -PimageName="cocktail-search-build-check:${CI_COMMIT_SHA}"
